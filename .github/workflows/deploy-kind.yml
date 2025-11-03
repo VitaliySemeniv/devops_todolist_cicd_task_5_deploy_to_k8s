@@ -1,21 +1,20 @@
-# .github/workflows/deploy-kind.yml
 name: "Deploy to kind (reusable)"
 
 on:
   workflow_call:
     inputs:
-      env_name: { required: true, type: string }
-      chart_dir: { required: true, type: string }
-      release_name: { required: true, type: string }
-      namespace: { required: true, type: string }
-      cluster_config: { required: true, type: string }
-      image_name: { required: true, type: string }
-      image_tag: { required: true, type: string }
+      env_name: { type: string, required: true }
+      chart_dir: { type: string, required: true }
+      release_name: { type: string, required: true }
+      namespace: { type: string, required: true }
+      cluster_config: { type: string, required: true }
+      image_name: { type: string, required: true }
+      image_tag: { type: string, required: true }
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.env_name }}
+    environment: ${{ inputs.env_name }} # тягнемо Environment secrets із вибраного середовища
     steps:
       - name: Download source artifact
         uses: actions/download-artifact@v4
@@ -32,11 +31,15 @@ jobs:
           config: ${{ inputs.cluster_config }}
 
       - name: Verify cluster
-        run: kubectl get nodes
+        run: kubectl get nodes -o wide
 
-      - name: Helm template (dry-run)
+      # ❗ Вимога ментора: валідація через helm install --dry-run
+      - name: Helm install --dry-run (server-side validation)
         run: |
-          helm template ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
+          helm install ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
+            --namespace ${{ inputs.namespace }} \
+            --create-namespace \
+            --dry-run --debug \
             --set image.repository=${{ inputs.image_name }} \
             --set image.tag=${{ inputs.image_tag }}
 
