@@ -54,7 +54,7 @@ jobs:
       - name: Upload Helm chart package
         uses: actions/upload-artifact@v4
         with:
-          name: helm-chart-${{ github.sha }}
+          name: helm-chart-${{ github.sha }}-${{ github.run_id }}
           path: helm-packages/*.tgz
 
       - name: Helm upgrade --install (atomic)
