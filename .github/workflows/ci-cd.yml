@@ -89,29 +89,27 @@ jobs:
 
   # 👇 ЦЕ — JOB ВИКЛИКУ РЕЮЗЕБЛ-ВОРКФЛОУ. НІ runS-ON, НІ steps ТУТ НЕ ПИШЕМО!
   deploy-dev:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: development
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-dev
-      cluster_config: workspace/cluster.yml
-      image_name: vitalysemeniv/todoapp
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-    environment: development
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  with:
+    env_name: development
+    chart_dir: workspace/helm-charts/todoapp
+    release_name: todoapp
+    namespace: todo-dev
+    cluster_config: workspace/cluster.yml
+    image_name: vitalysemeniv/todoapp
+    image_tag: ${{ github.sha }}
+  secrets: inherit
 
-  deploy-staging:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: staging
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-staging
-      cluster_config: workspace/cluster.yml
-      image_name: vitalysemeniv/todoapp
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-    environment: staging
+deploy-dev:
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  with:
+    env_name: development
+    chart_dir: workspace/helm-charts/todoapp
+    release_name: todoapp
+    namespace: todo-dev
+    cluster_config: workspace/cluster.yml
+    image_name: vitalysemeniv/todoapp
+    image_tag: ${{ github.sha }}
+  secrets: inherit
