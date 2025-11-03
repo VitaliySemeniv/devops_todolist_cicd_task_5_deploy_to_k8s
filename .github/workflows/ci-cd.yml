@@ -3,15 +3,15 @@ run-name: "CI/CD by ${{ github.actor }} @ ${{ github.sha }}"
 
 on:
   push:
-    branches: [your_name]
+    branches: [your_name] # працюємо з гілкою your_name
   pull_request:
-    branches: [main]
+    branches: [main] # PR у main
 
 env:
   PY_VERSION: "3.11"
   IMAGE_NAME: "vitalysemeniv/todoapp" # ← заміни на свій образ
   SRC_DIR: "workspace/src"
-  CHART_DIR: "workspace/helm-charts/todoapp" # ← шлях до чарту
+  CHART_DIR: "workspace/helm-charts/todoapp"
   CLUSTER_CFG: "workspace/cluster.yml"
   RELEASE_NAME: "todoapp"
 
@@ -87,29 +87,30 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-  # 👇 ЦЕ — JOB ВИКЛИКУ РЕЮЗЕБЛ-ВОРКФЛОУ. НІ runS-ON, НІ steps ТУТ НЕ ПИШЕМО!
+  # --- УВАГА ---
+  # це jobs рівня top-level. ЖОДНИХ "-" перед uses: і ЖОДНИХ steps тут!
   deploy-dev:
-  needs: [docker-ci]
-  uses: ./.github/workflows/deploy-kind.yml
-  with:
-    env_name: development
-    chart_dir: workspace/helm-charts/todoapp
-    release_name: todoapp
-    namespace: todo-dev
-    cluster_config: workspace/cluster.yml
-    image_name: vitalysemeniv/todoapp
-    image_tag: ${{ github.sha }}
-  secrets: inherit
+    needs: [docker-ci]
+    uses: ./.github/workflows/deploy-kind.yml
+    with:
+      env_name: development
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-dev
+      cluster_config: workspace/cluster.yml
+      image_name: vitalysemeniv/todoapp # ← свій образ
+      image_tag: ${{ github.sha }}
+    secrets: inherit
 
-deploy-dev:
-  needs: [docker-ci]
-  uses: ./.github/workflows/deploy-kind.yml
-  with:
-    env_name: development
-    chart_dir: workspace/helm-charts/todoapp
-    release_name: todoapp
-    namespace: todo-dev
-    cluster_config: workspace/cluster.yml
-    image_name: vitalysemeniv/todoapp
-    image_tag: ${{ github.sha }}
-  secrets: inherit
+  deploy-staging:
+    needs: [docker-ci]
+    uses: ./.github/workflows/deploy-kind.yml
+    with:
+      env_name: staging
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-staging
+      cluster_config: workspace/cluster.yml
+      image_name: vitalysemeniv/todoapp # ← свій образ
+      image_tag: ${{ github.sha }}
+    secrets: inherit

@@ -1,3 +1,4 @@
+# .github/workflows/deploy-kind.yml
 name: "Deploy to kind (reusable)"
 
 on:
@@ -11,10 +12,10 @@ on:
       image_name: { required: true, type: string }
       image_tag: { required: true, type: string }
 
-jobs: # ← виправлено: jobs (а не jjobs)
+jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.env_name }} # доступ до Environment secrets
+    environment: ${{ inputs.env_name }}
     steps:
       - name: Download source artifact
         uses: actions/download-artifact@v4
