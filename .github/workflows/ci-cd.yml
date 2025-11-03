@@ -64,53 +64,57 @@ jobs:
         run: flake8 . --select=C901 --max-complexity=12
         continue-on-error: true
 
-  docker-ci:
-    needs: [prepare-src, python-ci]
-    runs-on: ubuntu-latest
-    environment: development
-    steps:
-      - name: Download source
-        uses: actions/download-artifact@v4
-        with:
-          name: source-${{ github.sha }}
-          path: workspace
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build & Push image (tag=sha)
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ env.SRC_DIR }}
-          file: ${{ env.SRC_DIR }}/Dockerfile
-          push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+docker-ci:
+  needs: [prepare-src, python-ci]
+  runs-on: ubuntu-latest
+  environment: development
+  # ↓ запускаємо тільки на пушах у твій форк
+  if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
+  steps:
+    - name: Download source
+      uses: actions/download-artifact@v4
+      with:
+        name: source-${{ github.sha }}
+        path: workspace
 
-  # --- УВАГА ---
-  # це jobs рівня top-level. ЖОДНИХ "-" перед uses: і ЖОДНИХ steps тут!
-  deploy-dev:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: development
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-dev
-      cluster_config: workspace/cluster.yml
-      image_name: vitalysemeniv/todoapp # ← свій образ
-      image_tag: ${{ github.sha }}
-    secrets: inherit
+    - name: Log in to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  deploy-staging:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: staging
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-staging
-      cluster_config: workspace/cluster.yml
-      image_name: vitalysemeniv/todoapp # ← свій образ
-      image_tag: ${{ github.sha }}
-    secrets: inherit
+    - name: Build & Push image (tag=sha)
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ env.SRC_DIR }}
+        file: ${{ env.SRC_DIR }}/Dockerfile
+        push: true
+        tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+deploy-dev:
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
+  with:
+    env_name: development
+    chart_dir: workspace/helm-charts/todoapp
+    release_name: todoapp
+    namespace: todo-dev
+    cluster_config: workspace/cluster.yml
+    image_name: ${{ env.IMAGE_NAME }}
+    image_tag: ${{ github.sha }}
+  secrets: inherit
+
+deploy-staging:
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
+  with:
+    env_name: staging
+    chart_dir: workspace/helm-charts/todoapp
+    release_name: todoapp
+    namespace: todo-staging
+    cluster_config: workspace/cluster.yml
+    image_name: ${{ env.IMAGE_NAME }}
+    image_tag: ${{ github.sha }}
+  secrets: inherit
