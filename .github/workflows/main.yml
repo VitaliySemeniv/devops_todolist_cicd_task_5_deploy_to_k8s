@@ -99,32 +99,30 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-  # 4) Deploy to DEV (via reusable workflow)
   deploy-dev:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: development
-      chart_dir: ${{ env.CHART_DIR }}
-      release_name: ${{ env.RELEASE_NAME }}
-      namespace: "todo-dev"
-      cluster_config: ${{ env.CLUSTER_CFG }}
-      image_name: ${{ env.IMAGE_NAME }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-    environment: development
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  with:
+    env_name: development
+    chart_dir: workspace/helm-charts/todoapp # було ${{ env.CHART_DIR }}
+    release_name: todoapp # було ${{ env.RELEASE_NAME }}
+    namespace: todo-dev
+    cluster_config: workspace/cluster.yml # було ${{ env.CLUSTER_CFG }}
+    image_name: vitalysemeniv/todoapp # було ${{ env.IMAGE_NAME }}
+    image_tag: ${{ github.sha }}
+  secrets: inherit
+  environment: development
 
-  # 5) Deploy to STAGING (via reusable workflow)
-  deploy-staging:
-    needs: [docker-ci]
-    uses: ./.github/workflows/deploy-kind.yml
-    with:
-      env_name: staging
-      chart_dir: ${{ env.CHART_DIR }}
-      release_name: ${{ env.RELEASE_NAME }}
-      namespace: "todo-staging"
-      cluster_config: ${{ env.CLUSTER_CFG }}
-      image_name: ${{ env.IMAGE_NAME }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
-    environment: staging
+deploy-staging:
+  needs: [docker-ci]
+  uses: ./.github/workflows/deploy-kind.yml
+  with:
+    env_name: staging
+    chart_dir: workspace/helm-charts/todoapp
+    release_name: todoapp
+    namespace: todo-staging
+    cluster_config: workspace/cluster.yml
+    image_name: vitalysemeniv/todoapp
+    image_tag: ${{ github.sha }}
+  secrets: inherit
+  environment: staging
