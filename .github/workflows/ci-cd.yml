@@ -3,33 +3,30 @@ run-name: "CI/CD by ${{ github.actor }} @ ${{ github.sha }}"
 
 on:
   push:
-    branches: [your_name] # працюємо у гілці your_name, як вимагає задача
+    branches: [your_name]
   pull_request:
-    branches: [main] # PR у main теж запускає перевірки
+    branches: [main]
 
 env:
   PY_VERSION: "3.11"
-  IMAGE_NAME: "vitalysemeniv/todoapp" # ← заміни на свій DockerHub image
+  IMAGE_NAME: "vitalysemeniv/todoapp" # ← заміни на свій образ
   SRC_DIR: "workspace/src"
-  CHART_DIR: "workspace/src/helm/todoapp"
-  CLUSTER_CFG: "workspace/src/cluster.yml"
+  CHART_DIR: "workspace/helm-charts/todoapp" # ← шлях до чарту
+  CLUSTER_CFG: "workspace/cluster.yml"
   RELEASE_NAME: "todoapp"
 
 jobs:
-  # 1) ЄДИНИЙ checkout за весь ран → код передаємо артефактом
   prepare-src:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (only once)
         uses: actions/checkout@v4
-
       - name: Upload source as artifact
         uses: actions/upload-artifact@v4
         with:
           name: source-${{ github.sha }}
           path: ./
 
-  # 2) Python CI (тести/coverage/lint)
   python-ci:
     needs: prepare-src
     runs-on: ubuntu-latest
@@ -39,58 +36,49 @@ jobs:
         with:
           name: source-${{ github.sha }}
           path: workspace
-
       - name: Set up Python ${{ env.PY_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PY_VERSION }}
           cache: pip
-
       - name: Install deps
         working-directory: ${{ env.SRC_DIR }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install coverage flake8
-
       - name: Tests with coverage
         working-directory: ${{ env.SRC_DIR }}
         run: |
           coverage run manage.py test
           coverage xml -o coverage.xml
-
       - name: Show coverage
         working-directory: ${{ env.SRC_DIR }}
         run: coverage report -m
-
       - name: Flake8 (non-blocking)
         working-directory: ${{ env.SRC_DIR }}
         run: flake8 .
         continue-on-error: true
-
       - name: Complexity (non-blocking)
         working-directory: ${{ env.SRC_DIR }}
         run: flake8 . --select=C901 --max-complexity=12
         continue-on-error: true
 
-  # 3) Docker CI (build & push) — використовує Environment secrets (development)
   docker-ci:
     needs: [prepare-src, python-ci]
     runs-on: ubuntu-latest
-    environment: development # ← секректи беремо з env "development"
+    environment: development
     steps:
       - name: Download source
         uses: actions/download-artifact@v4
         with:
           name: source-${{ github.sha }}
           path: workspace
-
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Build & Push image (tag=sha)
         uses: docker/build-push-action@v5
         with:
@@ -99,30 +87,31 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+  # 👇 ЦЕ — JOB ВИКЛИКУ РЕЮЗЕБЛ-ВОРКФЛОУ. НІ runS-ON, НІ steps ТУТ НЕ ПИШЕМО!
   deploy-dev:
-  needs: [docker-ci]
-  uses: ./.github/workflows/deploy-kind.yml
-  with:
-    env_name: development
-    chart_dir: workspace/helm-charts/todoapp # було ${{ env.CHART_DIR }}
-    release_name: todoapp # було ${{ env.RELEASE_NAME }}
-    namespace: todo-dev
-    cluster_config: workspace/cluster.yml # було ${{ env.CLUSTER_CFG }}
-    image_name: vitalysemeniv/todoapp # було ${{ env.IMAGE_NAME }}
-    image_tag: ${{ github.sha }}
-  secrets: inherit
-  environment: development
+    needs: [docker-ci]
+    uses: ./.github/workflows/deploy-kind.yml
+    with:
+      env_name: development
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-dev
+      cluster_config: workspace/cluster.yml
+      image_name: vitalysemeniv/todoapp
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+    environment: development
 
-deploy-staging:
-  needs: [docker-ci]
-  uses: ./.github/workflows/deploy-kind.yml
-  with:
-    env_name: staging
-    chart_dir: workspace/helm-charts/todoapp
-    release_name: todoapp
-    namespace: todo-staging
-    cluster_config: workspace/cluster.yml
-    image_name: vitalysemeniv/todoapp
-    image_tag: ${{ github.sha }}
-  secrets: inherit
-  environment: staging
+  deploy-staging:
+    needs: [docker-ci]
+    uses: ./.github/workflows/deploy-kind.yml
+    with:
+      env_name: staging
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-staging
+      cluster_config: workspace/cluster.yml
+      image_name: vitalysemeniv/todoapp
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+    environment: staging

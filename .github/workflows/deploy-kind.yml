@@ -2,32 +2,17 @@ name: "Deploy to kind (reusable)"
 on:
   workflow_call:
     inputs:
-      env_name:
-        required: true
-        type: string
-      chart_dir:
-        required: true
-        type: string
-      release_name:
-        required: true
-        type: string
-      namespace:
-        required: true
-        type: string
-      cluster_config:
-        required: true
-        type: string
-      image_name:
-        required: true
-        type: string
-      image_tag:
-        required: true
-        type: string
+      env_name: { required: true, type: string }
+      chart_dir: { required: true, type: string }
+      release_name: { required: true, type: string }
+      namespace: { required: true, type: string }
+      cluster_config: { required: true, type: string }
+      image_name: { required: true, type: string }
+      image_tag: { required: true, type: string }
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # дозволяє доступ до Environment secrets, коли caller вказує environment
     steps:
       - name: Download source artifact
         uses: actions/download-artifact@v4
@@ -38,26 +23,23 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Setup kind (via action)
+      - name: Setup kind
         uses: helm/kind-action@v1.8.0
         with:
-          config: ${{ inputs.cluster_config }} # шлях до cluster.yml
+          config: ${{ inputs.cluster_config }}
 
       - name: Verify cluster
         run: kubectl get nodes
 
-      # Dry-run рендер (для валідації шаблонів)
       - name: Helm template (dry-run)
         run: |
           helm template ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
             --set image.repository=${{ inputs.image_name }} \
             --set image.tag=${{ inputs.image_tag }}
 
-      # Lint чарту
       - name: Helm lint
         run: helm lint ${{ inputs.chart_dir }}
 
-      # Упакувати чарт як артефакт (зручно для перевірки)
       - name: Helm package
         run: |
           mkdir -p helm-packages
@@ -69,7 +51,6 @@ jobs:
           name: helm-chart-${{ github.sha }}
           path: helm-packages/*.tgz
 
-      # Атомарний деплой (не дає поставити зламаний реліз)
       - name: Helm upgrade --install (atomic)
         run: |
           kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
