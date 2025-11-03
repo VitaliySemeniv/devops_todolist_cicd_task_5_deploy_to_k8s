@@ -107,7 +107,7 @@ jobs:
       release_name: todoapp
       namespace: todo-dev
       cluster_config: workspace/cluster.yml
-      image_name: ${{ env.IMAGE_NAME }}
+      image_name: ${{ vars.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -121,6 +121,6 @@ jobs:
       release_name: todoapp
       namespace: todo-staging
       cluster_config: workspace/cluster.yml
-      image_name: ${{ env.IMAGE_NAME }}
+      image_name: ${{ vars.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
