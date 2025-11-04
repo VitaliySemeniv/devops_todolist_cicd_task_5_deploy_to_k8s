@@ -60,9 +60,9 @@ jobs:
 
       - name: Helm upgrade --install (atomic)
         run: |
-          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
           helm upgrade --install ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
-            --namespace ${{ inputs.namespace }} \
-            --atomic --wait \
-            --set image.repository=${{ inputs.image_name }} \
-            --set image.tag=${{ inputs.image_tag }}
+               --namespace ${{ inputs.namespace }} \
+               --create-namespace \
+               --atomic --wait \
+              --set image.repository=${{ inputs.image_name }} \
+              --set image.tag=${{ inputs.image_tag }}

@@ -102,25 +102,25 @@ jobs:
     uses: ./.github/workflows/deploy-kind.yml
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     with:
-      env_name: development
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-dev
-      cluster_config: workspace/cluster.yml
-      image_name: ${{ vars.IMAGE_NAME }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
+  env_name: development
+  chart_dir: workspace/helm-charts/todoapp
+  release_name: todoapp
+  namespace: todo-dev
+  cluster_config: workspace/cluster.yml
+  image_name: ${{ env.IMAGE_NAME }}   # <-- було vars.IMAGE_NAME
+  image_tag: ${{ github.sha }}
+
 
   deploy-staging:
     needs: [docker-ci]
     uses: ./.github/workflows/deploy-kind.yml
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
-    with:
-      env_name: staging
-      chart_dir: workspace/helm-charts/todoapp
-      release_name: todoapp
-      namespace: todo-staging
-      cluster_config: workspace/cluster.yml
-      image_name: ${{ vars.IMAGE_NAME }}
-      image_tag: ${{ github.sha }}
-    secrets: inherit
+   with:
+  env_name: staging
+  chart_dir: workspace/helm-charts/todoapp
+  release_name: todoapp
+  namespace: todo-staging
+  cluster_config: workspace/cluster.yml
+  image_name: ${{ env.IMAGE_NAME }}   # <-- було vars.IMAGE_NAME
+  image_tag: ${{ github.sha }}
+
