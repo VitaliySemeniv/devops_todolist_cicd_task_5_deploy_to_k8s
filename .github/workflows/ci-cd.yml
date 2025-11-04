@@ -1,15 +1,16 @@
+# .github/workflows/ci-cd.yml
 name: "Python + Docker + Helm CI/CD"
 run-name: "CI/CD by ${{ github.actor }} @ ${{ github.sha }}"
 
 on:
   push:
-    branches: [ci_cd] # ← постав свою реальну гілку
+    branches: [ci_cd] # ← твоя реальна гілка
   pull_request:
     branches: [main]
 
 env:
   PY_VERSION: "3.11"
-  IMAGE_NAME: "vitalysemeniv/todoapp" # ← твій образ на Docker Hub
+  IMAGE_NAME: "vitalysemeniv/todoapp" # твій репозиторій у Docker Hub
   SRC_DIR: "workspace/src"
   CHART_DIR: "workspace/helm-charts/todoapp"
   CLUSTER_CFG: "workspace/cluster.yml"
@@ -74,7 +75,6 @@ jobs:
     needs: [prepare-src, python-ci]
     runs-on: ubuntu-latest
     environment: development
-    # запускаємо тільки на пушах у твій форк (де є Environment secrets)
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     steps:
       - name: Download source
@@ -102,25 +102,25 @@ jobs:
     uses: ./.github/workflows/deploy-kind.yml
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     with:
-  env_name: development
-  chart_dir: workspace/helm-charts/todoapp
-  release_name: todoapp
-  namespace: todo-dev
-  cluster_config: workspace/cluster.yml
-  image_name: ${{ env.IMAGE_NAME }}   # <-- було vars.IMAGE_NAME
-  image_tag: ${{ github.sha }}
-
+      env_name: development
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-dev
+      cluster_config: workspace/cluster.yml
+      image_name: ${{ env.IMAGE_NAME }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
 
   deploy-staging:
     needs: [docker-ci]
     uses: ./.github/workflows/deploy-kind.yml
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
-   with:
-  env_name: staging
-  chart_dir: workspace/helm-charts/todoapp
-  release_name: todoapp
-  namespace: todo-staging
-  cluster_config: workspace/cluster.yml
-  image_name: ${{ env.IMAGE_NAME }}   # <-- було vars.IMAGE_NAME
-  image_tag: ${{ github.sha }}
-
+    with:
+      env_name: staging
+      chart_dir: workspace/helm-charts/todoapp
+      release_name: todoapp
+      namespace: todo-staging
+      cluster_config: workspace/cluster.yml
+      image_name: ${{ env.IMAGE_NAME }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
