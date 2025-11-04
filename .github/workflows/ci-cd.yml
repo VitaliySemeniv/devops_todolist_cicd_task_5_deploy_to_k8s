@@ -107,7 +107,7 @@ jobs:
       release_name: todoapp
       namespace: todo-dev
       cluster_config: workspace/cluster.yml
-      image_name: ${{ env.IMAGE_NAME }}
+      image_name: ${{ vars.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -117,10 +117,10 @@ jobs:
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     with:
       env_name: staging
-      chart_dir: workspace/helm-charts/todoapp
+      chart_dir: workspace/helm-charts/todoappvars
       release_name: todoapp
       namespace: todo-staging
       cluster_config: workspace/cluster.yml
-      image_name: ${{ env.IMAGE_NAME }}
+      image_name: ${{ vars.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
