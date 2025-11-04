@@ -26,7 +26,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: source-${{ github.sha }}
-          path: ./
+          path: ./ # віддаємо весь репо як артефакт
 
   python-ci:
     needs: prepare-src
@@ -75,6 +75,7 @@ jobs:
     needs: [prepare-src, python-ci]
     runs-on: ubuntu-latest
     environment: development
+    # запускаємо тільки на пушах у твій форк (де є Environment secrets)
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     steps:
       - name: Download source
@@ -103,11 +104,11 @@ jobs:
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     with:
       env_name: development
-      chart_dir: workspace/helm-charts/todoapp
+      chart_dir: ./workspace/helm-charts/todoapp
       release_name: todoapp
       namespace: todo-dev
-      cluster_config: workspace/cluster.yml
-      image_name: ${{ vars.IMAGE_NAME }}
+      cluster_config: ./workspace/cluster.yml
+      image_name: ${{ env.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -117,10 +118,10 @@ jobs:
     if: ${{ github.event_name == 'push' && github.repository_owner == 'VitaliySemeniv' }}
     with:
       env_name: staging
-      chart_dir: workspace/helm-charts/todoappvars
+      chart_dir: ./workspace/helm-charts/todoapp
       release_name: todoapp
       namespace: todo-staging
-      cluster_config: workspace/cluster.yml
-      image_name: ${{ vars.IMAGE_NAME }}
+      cluster_config: ./workspace/cluster.yml
+      image_name: ${{ env.IMAGE_NAME }}
       image_tag: ${{ github.sha }}
     secrets: inherit
