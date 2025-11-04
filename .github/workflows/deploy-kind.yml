@@ -3,18 +3,18 @@ name: "Deploy to kind (reusable)"
 on:
   workflow_call:
     inputs:
-      env_name: { type: string, required: true }
-      chart_dir: { type: string, required: true }
-      release_name: { type: string, required: true }
-      namespace: { type: string, required: true }
-      cluster_config: { type: string, required: true }
-      image_name: { type: string, required: true }
-      image_tag: { type: string, required: true }
+      env_name: { required: true, type: string }
+      chart_dir: { required: true, type: string }
+      release_name: { required: true, type: string }
+      namespace: { required: true, type: string }
+      cluster_config: { required: true, type: string }
+      image_name: { required: true, type: string }
+      image_tag: { required: true, type: string }
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.env_name }} # тягнемо Environment secrets із вибраного середовища
+    environment: ${{ inputs.env_name }}
     steps:
       - name: Download source artifact
         uses: actions/download-artifact@v4
@@ -31,9 +31,8 @@ jobs:
           config: ${{ inputs.cluster_config }}
 
       - name: Verify cluster
-        run: kubectl get nodes -o wide
+        run: kubectl get nodes
 
-      # ❗ Вимога ментора: валідація через helm install --dry-run
       - name: Helm install --dry-run (server-side validation)
         run: |
           helm install ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
@@ -54,15 +53,14 @@ jobs:
       - name: Upload Helm chart package
         uses: actions/upload-artifact@v4
         with:
-          # унікально: dev vs staging + sha + спроба
           name: helm-chart-${{ inputs.env_name }}-${{ github.sha }}-${{ github.run_attempt }}
           path: helm-packages/*.tgz
 
       - name: Helm upgrade --install (atomic)
         run: |
           helm upgrade --install ${{ inputs.release_name }} ${{ inputs.chart_dir }} \
-               --namespace ${{ inputs.namespace }} \
-               --create-namespace \
-               --atomic --wait \
-              --set image.repository=${{ inputs.image_name }} \
-              --set image.tag=${{ inputs.image_tag }}
+            --namespace ${{ inputs.namespace }} \
+            --create-namespace \
+            --atomic --wait \
+            --set image.repository=${{ inputs.image_name }} \
+            --set image.tag=${{ inputs.image_tag }}
